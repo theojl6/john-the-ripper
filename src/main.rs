@@ -1,3 +1,5 @@
+use john_the_ripper::md5;
+
 fn main() {
-    println!("Hello, world!");
+    let digest = md5::compute("Hello world!");
 }

@@ -8,6 +8,7 @@
 // John source code
 // https://github.com/openwall/john
 
+#[derive(Default)]
 pub struct Digest(pub [u8; 16]);
 
 pub fn compute(message: &str) -> Digest {
@@ -31,14 +32,28 @@ pub fn compute(message: &str) -> Digest {
         k[i] = (f64::floor(2.0f64.powf(32.0) * f64::sin((i as f64) + 1.0).abs())).round() as i64;
     }
 
-    // init A, B, C, D
-    let a0: i64 = 0x67452301; // A
-    let b0: i64 = 0xefcdab89; // B
-    let c0: i64 = 0x98badcfe; // C
-    let d0: i64 = 0x10325476; // D
+    // init constants A, B, C, D
+    const A: i64 = 0x67452301; // A
+    const B: i64 = 0xefcdab89; // B
+    const C: i64 = 0x98badcfe; // C
+    const D: i64 = 0x10325476; // D
 
     // Pre-processing: adding a single 1 bit
     // to message
+    // pad until it is a multiple of the desired length
+    let desired_multiple = 512 / 8;
+    dbg!(desired_multiple);
+    dbg!(message.len());
+    let mut message_bytes = message.as_bytes().to_owned();
+    let padding_with_leading_bit = 128;
+    message_bytes.push(padding_with_leading_bit);
 
-    unimplemented!()
+    // pad with zeros
+    while message_bytes.len() % desired_multiple != 0 {
+        message_bytes.push(0);
+    }
+
+    dbg!(message_bytes.len());
+    dbg!(message_bytes.len() * 8);
+    return Digest::default();
 }
