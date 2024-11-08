@@ -33,34 +33,52 @@ pub fn compute(message: &str) -> Digest {
     }
 
     // init constants A, B, C, D
-    const A: i64 = 0x67452301; // A
-    const B: i64 = 0xefcdab89; // B
-    const C: i64 = 0x98badcfe; // C
-    const D: i64 = 0x10325476; // D
+    let mut a0: i64 = 0x67452301; // A
+    let mut b0: i64 = 0xefcdab89; // B
+    let mut c0: i64 = 0x98badcfe; // C
+    let mut d0: i64 = 0x10325476; // D
 
     // Pre-processing: adding a single 1 bit
     // to message
     // pad until it is a multiple of the desired length
-    let desired_multiple = 512 / 8;
-    dbg!(desired_multiple);
-    dbg!(message.len());
+    let chunk_size = 512 / 8;
     let mut message_bytes = message.as_bytes().to_owned();
+    // NOTE: what should happen to the trailing 0's from the original message...?
+    // technically the below implementation is wrong because it does not remove those trailing 0's before appending the 1 bit
     let padding_with_leading_bit = 128;
     message_bytes.push(padding_with_leading_bit);
 
     // pad with zeros
-    let message_length_placeholder = 8; // 64
-                                        // think this works
-    while (message_bytes.len() + message_length_placeholder) % desired_multiple != 0 {
+    let message_length_placeholder = 8; // 64 bits
+    while (message_bytes.len() + message_length_placeholder) % chunk_size != 0 {
         message_bytes.push(0);
     }
 
     let mut original_length_in_bytes = (message.len() % 2_usize.pow(8)).to_le_bytes().to_vec();
-    dbg!(&original_length_in_bytes);
     message_bytes.append(&mut original_length_in_bytes);
-    dbg!(&original_length_in_bytes);
 
-    dbg!(message_bytes.len());
-    dbg!(message_bytes.len() * 8);
+    // for each 512-bit chunk of padded message do
+    for chunk in message_bytes.chunks(chunk_size) {
+        // intialize has value for this hunk
+        let a = a0;
+        let b = b0;
+        let c = c0;
+        let d = d0;
+        // break chunk into sixteen 32-bit words M[j], 0 ≤ j ≤ 15; 512 bits / 32 bits = 16 words
+        // so sixteen 4 byte words, each word containing 32 bits
+        for (i, word) in chunk.chunks(4).enumerate() {
+            let mut f;
+            let mut g;
+            match i {
+                0 => {
+                    f = (b & c) | ((!b) & d);
+                }
+                1 => {}
+                2 => {}
+                3 => {}
+            };
+        }
+    }
+
     return Digest::default();
 }
