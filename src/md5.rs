@@ -49,9 +49,16 @@ pub fn compute(message: &str) -> Digest {
     message_bytes.push(padding_with_leading_bit);
 
     // pad with zeros
-    while message_bytes.len() % desired_multiple != 0 {
+    let message_length_placeholder = 8; // 64
+                                        // think this works
+    while (message_bytes.len() + message_length_placeholder) % desired_multiple != 0 {
         message_bytes.push(0);
     }
+
+    let mut original_length_in_bytes = (message.len() % 2_usize.pow(8)).to_le_bytes().to_vec();
+    dbg!(&original_length_in_bytes);
+    message_bytes.append(&mut original_length_in_bytes);
+    dbg!(&original_length_in_bytes);
 
     dbg!(message_bytes.len());
     dbg!(message_bytes.len() * 8);
