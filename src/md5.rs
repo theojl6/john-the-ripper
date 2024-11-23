@@ -30,7 +30,8 @@ pub fn compute(message: &str) -> Digest {
     // Use binary integer part of the sines of integers (Radians) as constants:
     let mut k: [u32; 64] = [0; 64];
     for i in 0..64 {
-        k[i] = (f32::floor(2.0f32.powf(32.0) * f32::sin((i as f32) + 1.0).abs())).round() as u32;
+        k[i] = (f64::floor(2.0f64.powf(32.0) * f64::sin((i as f64) + 1.0).abs())).round() as u32;
+        // println!("{:#08x}", k[i]);
     }
 
     // init constants A, B, C, D
@@ -64,16 +65,17 @@ pub fn compute(message: &str) -> Digest {
         dbg!(chunk.len());
         // there are 512 bits (64 bytes) in this chunk
         // this chunk needs to be divided into 16 32-bit (4 bytes) words
-        for m in chunk.chunks(16) {
+        for m in chunk.chunks(4) {
             dbg!(m.len());
+            // each m has 4 8-bit words, so 32 bits
+            // main loop
             let mut a = a0;
             let mut b = b0;
             let mut c = c0;
             let mut d = d0;
-            // main loop
             for i in 0..64 {
-                let mut f = 0;
-                let mut g = 0;
+                let mut f: u32 = 0;
+                let mut g: u32 = 0;
                 if i <= 15 {
                     f = (b & c) | ((!b) & d);
                     g = i;
@@ -87,20 +89,33 @@ pub fn compute(message: &str) -> Digest {
                     f = c ^ (b | (!d));
                     g = (7 * i) % 16;
                 }
-                f = f + a + k[i] + (m[g] as u32);
+                // m[g] should represent a single bit
+                // m contains 4 8-bit words
+                let mut bit = 0;
+                dbg!(g);
+                if g <= 3 {
+                    bit = m[0] & (1 << g);
+                } else if 4 <= g && g <= 7 {
+                    bit = m[1] & (1 << g - 4);
+                } else if 8 <= g && g <= 11 {
+                    bit = m[2] & (1 << g - 8);
+                } else if 12 <= g && g <= 15 {
+                    bit = m[3] & (1 << g - 12);
+                }
+                dbg!(bit);
+                dbg!(f);
+                dbg!(a);
+                dbg!(k[i as usize]);
+                f = f + a + k[i as usize] + (bit as u32);
                 a = d;
                 d = c;
                 c = b;
-                b = b + f.rotate_left(s[i]);
+                b = b + f.rotate_left(s[i as usize]);
             }
             a0 = a0 + a;
             b0 = b0 + b;
             c0 = c0 + c;
             d0 = d0 + d;
-            // break chunk into sixteen 32-bit words M[j], 0 ≤ j ≤ 15; 512 bits / 32 bits = 16 words
-            // so sixteen 4 byte words, each word containing 32 bits
-            // each loop is a round, there are 4 rounds in total
-            // each round consists of 16 similar operations
         }
     }
 
