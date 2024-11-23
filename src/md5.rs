@@ -103,19 +103,16 @@ pub fn compute(message: &str) -> Digest {
                     bit = m[3] & (1 << g - 12);
                 }
                 dbg!(bit);
-                dbg!(f);
-                dbg!(a);
-                dbg!(k[i as usize]);
-                f = f + a + k[i as usize] + (bit as u32);
+                f = f.wrapping_add(a.wrapping_add(k[i as usize].wrapping_add(bit as u32)));
                 a = d;
                 d = c;
                 c = b;
-                b = b + f.rotate_left(s[i as usize]);
+                b = b.wrapping_add(f.rotate_left(s[i as usize]));
             }
-            a0 = a0 + a;
-            b0 = b0 + b;
-            c0 = c0 + c;
-            d0 = d0 + d;
+            a0 = a0.wrapping_add(a);
+            b0 = b0.wrapping_add(b);
+            c0 = c0.wrapping_add(c);
+            d0 = d0.wrapping_add(d);
         }
     }
 
@@ -123,9 +120,11 @@ pub fn compute(message: &str) -> Digest {
         .to_le_bytes()
         .iter()
         .chain(&b0.to_le_bytes())
+        .chain(&c0.to_le_bytes())
+        .chain(&d0.to_le_bytes())
         .cloned()
         .collect();
     let mut digest: [u8; 16] = [0; 16];
-    digest.copy_from_slice(&digest_vec[..64]);
+    digest.copy_from_slice(&digest_vec[..]);
     return Digest(digest);
 }
