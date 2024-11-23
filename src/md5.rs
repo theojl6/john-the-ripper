@@ -8,8 +8,23 @@
 // John source code
 // https://github.com/openwall/john
 
+use std::fmt::Display;
+
 #[derive(Default)]
 pub struct Digest(pub [u8; 16]);
+
+impl Display for Digest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0
+                .iter()
+                .map(|h| format!("{:02x}", h))
+                .collect::<String>()
+        )
+    }
+}
 
 // MD5 processes a variable-length message into a fixed-length output of 128 bits (8 * 16 = 128, 4 * 32 = 128)
 pub fn compute(message: &str) -> Digest {
@@ -62,58 +77,44 @@ pub fn compute(message: &str) -> Digest {
     // for each 512-bit chunk of padded message do
     // modify the 4 32 bit words
     for chunk in message_bytes.chunks(chunk_size) {
-        dbg!(chunk.len());
         // there are 512 bits (64 bytes) in this chunk
         // this chunk needs to be divided into 16 32-bit (4 bytes) words
-        for m in chunk.chunks(4) {
-            dbg!(m.len());
-            // each m has 4 8-bit words, so 32 bits
-            // main loop
-            let mut a = a0;
-            let mut b = b0;
-            let mut c = c0;
-            let mut d = d0;
-            for i in 0..64 {
-                let mut f: u32 = 0;
-                let mut g: u32 = 0;
-                if i <= 15 {
-                    f = (b & c) | ((!b) & d);
-                    g = i;
-                } else if 16 <= i && i <= 31 {
-                    f = (d & b) | ((!d) & c);
-                    g = (5 * i + 1) % 16;
-                } else if 32 <= i && i <= 47 {
-                    f = b ^ c ^ d;
-                    g = (3 * i + 5) % 16;
-                } else if 48 <= i && i <= 63 {
-                    f = c ^ (b | (!d));
-                    g = (7 * i) % 16;
-                }
-                // m[g] should represent a single bit
-                // m contains 4 8-bit words
-                let mut bit = 0;
-                dbg!(g);
-                if g <= 3 {
-                    bit = m[0] & (1 << g);
-                } else if 4 <= g && g <= 7 {
-                    bit = m[1] & (1 << g - 4);
-                } else if 8 <= g && g <= 11 {
-                    bit = m[2] & (1 << g - 8);
-                } else if 12 <= g && g <= 15 {
-                    bit = m[3] & (1 << g - 12);
-                }
-                dbg!(bit);
-                f = f.wrapping_add(a.wrapping_add(k[i as usize].wrapping_add(bit as u32)));
-                a = d;
-                d = c;
-                c = b;
-                b = b.wrapping_add(f.rotate_left(s[i as usize]));
+
+        let m: Vec<&[u8]> = chunk.chunks(4).collect();
+        // each m has 4 8-bit words, so 32 bits
+        // main loop
+        let mut a = a0;
+        let mut b = b0;
+        let mut c = c0;
+        let mut d = d0;
+        for i in 0..64 {
+            let mut f: u32 = 0;
+            let mut g: u32 = 0;
+            if i <= 15 {
+                f = (b & c) | ((!b) & d);
+                g = i;
+            } else if 16 <= i && i <= 31 {
+                f = (d & b) | ((!d) & c);
+                g = (5 * i + 1) % 16;
+            } else if 32 <= i && i <= 47 {
+                f = b ^ c ^ d;
+                g = (3 * i + 5) % 16;
+            } else if 48 <= i && i <= 63 {
+                f = c ^ (b | (!d));
+                g = (7 * i) % 16;
             }
-            a0 = a0.wrapping_add(a);
-            b0 = b0.wrapping_add(b);
-            c0 = c0.wrapping_add(c);
-            d0 = d0.wrapping_add(d);
+            let bits = u32::from_le_bytes(m[g as usize].try_into().unwrap());
+
+            f = f.wrapping_add(a.wrapping_add(k[i as usize].wrapping_add(bits)));
+            a = d;
+            d = c;
+            c = b;
+            b = b.wrapping_add(f.rotate_left(s[i as usize]));
         }
+        a0 = a0.wrapping_add(a);
+        b0 = b0.wrapping_add(b);
+        c0 = c0.wrapping_add(c);
+        d0 = d0.wrapping_add(d);
     }
 
     let digest_vec: Vec<u8> = a0
@@ -127,4 +128,16 @@ pub fn compute(message: &str) -> Digest {
     let mut digest: [u8; 16] = [0; 16];
     digest.copy_from_slice(&digest_vec[..]);
     return Digest(digest);
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn fox() {
+        let md5_hash = compute("The quick brown fox jumps over the lazy dog").to_string();
+        assert_eq!(md5_hash, "9e107d9d372bb6826bd81d3542a419d6");
+    }
 }
