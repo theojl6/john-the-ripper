@@ -62,7 +62,8 @@ pub fn compute(message: &str) -> Digest {
     let mut message_bytes = message.as_bytes().to_owned();
     // NOTE: what should happen to the trailing 0's from the original message...?
     // technically the below implementation is wrong because it does not remove those trailing 0's before appending the 1 bit
-    let padding_with_leading_bit = 128;
+    let padding_with_leading_bit = 128u8;
+
     message_bytes.push(padding_with_leading_bit);
 
     // pad with zeros
@@ -134,6 +135,14 @@ pub fn compute(message: &str) -> Digest {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn zero_length() {
+        let md5_hash = compute("").to_string();
+        assert_eq!(md5_hash, "d41d8cd98f00b204e9800998ecf8427e");
+
+
+    }
 
     #[test]
     fn fox() {
