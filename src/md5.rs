@@ -71,11 +71,11 @@ pub fn compute(message: &str) -> Digest {
         message_bytes.push(0);
     }
 
-    let original_length_in_bits = (message.len() as u64)
+    let mut original_length_in_bits = (message.len() as u64)
         .wrapping_mul(8)
         .to_le_bytes()
         .to_vec();
-    message_bytes.extend_from_slice(&original_length_in_bits);
+    message_bytes.append(&mut original_length_in_bits);
 
     // for each 512-bit chunk of padded message do
     // modify the 4 32 bit words
@@ -148,5 +148,11 @@ mod tests {
     fn fox() {
         let md5_hash = compute("The quick brown fox jumps over the lazy dog").to_string();
         assert_eq!(md5_hash, "9e107d9d372bb6826bd81d3542a419d6");
+    }
+
+    #[test]
+    fn fox_dot() {
+        let md5_hash = compute("The quick brown fox jumps over the lazy dog.").to_string();
+        assert_eq!(md5_hash, "e4d909c290d0fb1ca068ffaddf22cbd0");
     }
 }
