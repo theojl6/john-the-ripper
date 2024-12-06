@@ -71,7 +71,10 @@ pub fn compute(message: &str) -> Digest {
         message_bytes.push(0);
     }
 
-    let original_length_in_bits = (message.len() as u64 * 8).to_le_bytes().to_vec();
+    let original_length_in_bits = (message.len() as u64)
+        .wrapping_mul(8)
+        .to_le_bytes()
+        .to_vec();
     message_bytes.extend_from_slice(&original_length_in_bits);
 
     // for each 512-bit chunk of padded message do
