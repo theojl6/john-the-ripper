@@ -63,7 +63,6 @@ pub fn compute(message: &str) -> Digest {
     // NOTE: what should happen to the trailing 0's from the original message...?
     // technically the below implementation is wrong because it does not remove those trailing 0's before appending the 1 bit
     let padding_with_leading_bit = 128u8;
-
     message_bytes.push(padding_with_leading_bit);
 
     // pad with zeros
@@ -72,8 +71,8 @@ pub fn compute(message: &str) -> Digest {
         message_bytes.push(0);
     }
 
-    let mut original_length_in_bytes = (message.len() % 2_usize.pow(8)).to_le_bytes().to_vec();
-    message_bytes.append(&mut original_length_in_bytes);
+    let original_length_in_bits = (message.len() as u64 * 8).to_le_bytes().to_vec();
+    message_bytes.extend_from_slice(&original_length_in_bits);
 
     // for each 512-bit chunk of padded message do
     // modify the 4 32 bit words
@@ -140,8 +139,6 @@ mod tests {
     fn zero_length() {
         let md5_hash = compute("").to_string();
         assert_eq!(md5_hash, "d41d8cd98f00b204e9800998ecf8427e");
-
-
     }
 
     #[test]

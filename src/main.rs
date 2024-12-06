@@ -1,6 +1,6 @@
 use john_the_ripper::md5;
 
 fn main() {
-    let digest = md5::compute("");
+    let digest = md5::compute("abc");
     println!("{}", digest);
 }
